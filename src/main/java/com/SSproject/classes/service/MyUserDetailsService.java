@@ -2,31 +2,37 @@ package com.SSproject.classes.service;
 
 import com.SSproject.classes.dto.UserTO;
 import com.SSproject.classes.entity.UserPojo;
-import com.SSproject.classes.model.UserModel;
+import com.SSproject.classes.model.MyUserDetails;
 import com.SSproject.interfaces.repo.UserRepo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class UserService implements UserDetailsService {
+public class MyUserDetailsService implements UserDetailsService {
+
+    private static final Logger logger = LoggerFactory.getLogger(MyUserDetailsService.class);
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        logger.info("Sto usando l'userDetailsService custom");
         UserPojo user = userRepo.findByUsername(username);
         if (user == null)
             throw new UsernameNotFoundException("User not found");
-        return new UserModel(user);
+        return new MyUserDetails(user);
     }
 
     /* --------------------- per le operazioni sul db --------------------- */
-
+    private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(12);
     private final UserRepo userRepo;
 
-    public UserService(UserRepo userRepo){
+    public MyUserDetailsService(UserRepo userRepo){
         this.userRepo=userRepo;
     }
 
@@ -35,6 +41,7 @@ public class UserService implements UserDetailsService {
     }
 
     public void save(UserTO userTO) {
+        userTO.setPassword(bCryptPasswordEncoder.encode(userTO.getPassword()));
         userRepo.save( transformToPojo(userTO) );
     }
 
