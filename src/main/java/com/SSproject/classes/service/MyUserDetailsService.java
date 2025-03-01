@@ -6,6 +6,11 @@ import com.SSproject.classes.model.MyUserDetails;
 import com.SSproject.interfaces.repo.UserRepo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -18,6 +23,13 @@ import java.util.List;
 public class MyUserDetailsService implements UserDetailsService {
 
     private static final Logger logger = LoggerFactory.getLogger(MyUserDetailsService.class);
+    private final UserRepo userRepo;
+
+    public MyUserDetailsService(UserRepo userRepo) {
+        this.userRepo = userRepo;
+    }
+
+    /* --------------------- per le operazioni sul db --------------------- */
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -28,51 +40,4 @@ public class MyUserDetailsService implements UserDetailsService {
         return new MyUserDetails(user);
     }
 
-    /* --------------------- per le operazioni sul db --------------------- */
-    private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(12);
-    private final UserRepo userRepo;
-
-    public MyUserDetailsService(UserRepo userRepo){
-        this.userRepo=userRepo;
-    }
-
-    public UserPojo read(String userName) {
-        return userRepo.findByUsername(userName);
-    }
-
-    public void save(UserTO userTO) {
-        userTO.setPassword(bCryptPasswordEncoder.encode(userTO.getPassword()));
-        userRepo.save( transformToPojo(userTO) );
-    }
-
-    public void delete(String userName) {
-        userRepo.delete(userRepo.findByUsername(userName));
-    }
-
-    public void update(UserTO userTO) {
-        // da fare
-        return;
-    }
-
-    public List<UserTO> list() {
-        // da fare
-        return null;
-    }
-
-    public UserTO transformToDTO(String userName){
-        UserPojo userPojo = read(userName);
-        UserTO userTO = new UserTO();
-        userTO.setId(userPojo.getId());
-        userTO.setUsername(userPojo.getUsername());
-        /* se c'è altro */
-       return userTO;
-    }
-
-    public UserPojo transformToPojo(UserTO userTO){
-        UserPojo userPojo = new UserPojo();
-        userPojo.setUsername(userTO.getUsername());
-        userPojo.setPassword(userTO.getPassword());
-        /* se c'è altro */
-        return userPojo;
-    }
 }
