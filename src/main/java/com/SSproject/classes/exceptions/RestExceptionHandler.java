@@ -1,21 +1,22 @@
 package com.SSproject.classes.exceptions;
 
 import com.SSproject.classes.response.ResponseDTO;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.*;
 
-@ControllerAdvice
-public class GlobalExceptionHandler {
+import java.util.stream.Collectors;
+
+@ControllerAdvice(annotations = RestController.class) // Applica solo ai controller REST
+public class RestExceptionHandler {
 
     // Classe di risposta per errori - ora estende ResponseDTO per uniformare le risposte
     public static class ErrorResponse extends ResponseDTO<String> {
         private final String details;
 
         public ErrorResponse(String message, String details) {
-            super(message, null);
+            super("ERROR", message, null);
             this.details = details;
         }
 
@@ -43,5 +44,25 @@ public class GlobalExceptionHandler {
     @ResponseBody
     public ErrorResponse handleIllegalArgumentException(IllegalArgumentException e) {
         return new ErrorResponse("Parametri non validi", e.getMessage());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @ResponseBody
+    public ErrorResponse handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+        String message = e.getMessage() != null && e.getMessage().contains("username")
+                ? "Username già esistente"
+                : "Violazione dei vincoli di integrità dei dati";
+        return new ErrorResponse(message, e.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public ErrorResponse handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        String details = e.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        return new ErrorResponse("Dati utente non validi", details);
     }
 }

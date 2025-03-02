@@ -24,6 +24,14 @@ public class ResponseDTO<T> {
         this.data = null;
     }
 
+    // Costruttore per risposte di errore
+    public ResponseDTO(String status, String message, T data) {
+        this.timestamp = LocalDateTime.now();
+        this.status = status;
+        this.message = message;
+        this.data = data;
+    }
+
     // Getter e setter
     public LocalDateTime getTimestamp() {
         return timestamp;

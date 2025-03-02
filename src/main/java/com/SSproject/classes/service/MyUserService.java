@@ -6,9 +6,11 @@ import com.SSproject.interfaces.repo.UserRepo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,23 +32,20 @@ public class MyUserService {
         this.jwtService = jwtService;
     }
 
-    public String verify(UserTO userTO) {
-        try {
+    public String generateToken(UserTO userTO){
+        return verify(transformToPojo(userTO));
+    }
+
+    public String verify(UserPojo userPojo) {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            userTO.getUsername(),
-                            userTO.getPassword()));
+                            userPojo.getUsername(),
+                            userPojo.getPassword()));
 
             if (authentication.isAuthenticated()) {
-                return jwtService.generateToken(userTO.getUsername()) ;
-            } else {
-                return "Autenticazione fallita";
-            }
-        } catch (Exception e) {
-            // Log the exception
-            logger.error("Authentication error for user {}: {}", userTO.getUsername(), e.getMessage());
-            return "Autenticazione fallita: " + e.getMessage();
-        }
+                return jwtService.generateToken(userPojo.getUsername()) ;
+            } else
+                throw new UsernameNotFoundException("Autenticazione fallita");
     }
 
 
@@ -55,8 +54,25 @@ public class MyUserService {
     }
 
     public void save(UserTO userTO) {
-        userTO.setPassword(bCryptPasswordEncoder.encode(userTO.getPassword()));
-        userRepo.save( transformToPojo(userTO) );
+
+        UserPojo user = transformToPojo(userTO);
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty())
+            throw new IllegalArgumentException("Username non può essere vuoto");
+
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty())
+            throw new IllegalArgumentException("Password non può essere vuota");
+
+        UserPojo existingUser = userRepo.findByUsername(user.getUsername());
+        if (existingUser != null)
+            throw new DataIntegrityViolationException("Username già esistente: " + user.getUsername());
+
+        user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+
+        try {
+            userRepo.save(user);
+        } catch (Exception e) {
+            throw new RuntimeException("Errore durante il salvataggio dell'utente", e);
+        }
     }
 
     public void delete(String userName) {

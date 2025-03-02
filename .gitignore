@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Ignora altri file di configurazione sensibili
+**/application-dev.properties
+**/application-prod.properties
+**/application-local.propertiessrc/main/resources/application.properties

@@ -29,8 +29,6 @@ public class MyUserDetailsService implements UserDetailsService {
         this.userRepo = userRepo;
     }
 
-    /* --------------------- per le operazioni sul db --------------------- */
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         logger.info("Sto usando l'userDetailsService custom");
